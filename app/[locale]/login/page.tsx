@@ -81,6 +81,26 @@ export default async function Login({
     return redirect(`/${homeWorkspace.id}/chat`)
   }
 
+  const signInWithAzure = async function signInWithAzure() {
+    "use server"
+
+    const cookieStore = cookies()
+    const supabase = createClient(cookieStore)
+
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: "azure",
+      options: {
+        scopes: "email"
+      }
+    })
+
+    if (error) {
+      return redirect(`/login?message=${error.message}`)
+    }
+
+    return redirect(data.url)
+  }
+
   const getEnvVarOrEdgeConfigValue = async (name: string) => {
     "use server"
     if (process.env.EDGE_CONFIG) {
@@ -169,14 +189,14 @@ export default async function Login({
       >
         <Brand />
 
-        <Label className="text-md mt-4" htmlFor="email">
+        {/* <Label className="text-md mt-4" htmlFor="email">
           Email
         </Label>
         <Input
           className="mb-3 rounded-md border bg-inherit px-4 py-2"
           name="email"
           placeholder="you@example.com"
-          required
+          // required
         />
 
         <Label className="text-md" htmlFor="password">
@@ -198,9 +218,16 @@ export default async function Login({
           className="border-foreground/20 mb-2 rounded-md border px-4 py-2"
         >
           Sign Up
+        </SubmitButton> */}
+
+        <SubmitButton
+          formAction={signInWithAzure}
+          className="my-2 rounded-md bg-blue-700 px-4 py-2 text-white"
+        >
+          Continue with Single Sign-On
         </SubmitButton>
 
-        <div className="text-muted-foreground mt-1 flex justify-center text-sm">
+        {/* <div className="text-muted-foreground mt-1 flex justify-center text-sm">
           <span className="mr-1">Forgot your password?</span>
           <button
             formAction={handleResetPassword}
@@ -208,7 +235,7 @@ export default async function Login({
           >
             Reset
           </button>
-        </div>
+        </div> */}
 
         {searchParams?.message && (
           <p className="bg-foreground/10 text-foreground mt-4 p-4 text-center">
