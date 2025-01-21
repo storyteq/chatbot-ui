@@ -24,21 +24,35 @@ export async function POST(request: Request) {
       organization: profile.openai_organization_id
     })
 
-    const response = await openai.chat.completions.create({
+    const baseConfig = {
       model: chatSettings.model as ChatCompletionCreateParamsBase["model"],
-      messages: messages as ChatCompletionCreateParamsBase["messages"],
-      temperature: chatSettings.temperature,
-      max_tokens:
-        chatSettings.model === "gpt-4-vision-preview" ||
-        chatSettings.model === "gpt-4o"
-          ? 4096
-          : null, // TODO: Fix
-      stream: true
-    })
+      messages: messages as ChatCompletionCreateParamsBase["messages"]
+    }
 
-    const stream = OpenAIStream(response)
+    if (baseConfig.model === "o1") {
+      const response = await openai.chat.completions.create({
+        ...baseConfig,
+        max_completion_tokens: 32768,
+        stream: false
+      })
 
-    return new StreamingTextResponse(stream)
+      return new Response(response.choices[0].message.content)
+    } else {
+      const response = await openai.chat.completions.create({
+        ...baseConfig,
+        stream: true,
+        temperature: chatSettings.temperature,
+        max_tokens:
+          chatSettings.model === "gpt-4-vision-preview" ||
+          chatSettings.model === "gpt-4o"
+            ? 4096
+            : null // TODO: Fix
+      })
+
+      const stream = OpenAIStream(response)
+
+      return new StreamingTextResponse(stream)
+    }
   } catch (error: any) {
     let errorMessage = error.message || "An unexpected error occurred"
     const errorCode = error.status || 500
